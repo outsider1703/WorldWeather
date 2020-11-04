@@ -19,7 +19,8 @@ class NetworkManager {
         let urlForCoordinates = "https://api.openweathermap.org/data/2.5/weather?q=\(city)&appid=296587b38757a82922339cb00dda4ea3"
         guard let url = URL(string: urlForCoordinates) else { return }
         
-        URLSession.shared.dataTask(with: url) { (data, response, error) in
+        URLSession.shared.dataTask(with: url) {[weak self] (data, response, error) in
+            guard let self = self else { return }
             
             if let error = error {
                 print("DataTask error: \(error.localizedDescription)")

@@ -24,7 +24,7 @@ class SectionHeader: UICollectionReusableView {
         super.init(frame: frame)
         self.addSubview(title)
         title.snp.makeConstraints { (make) in
-            make.edges.equalTo(UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0))
+            make.edges.equalTo(UIEdgeInsets.zero)
         }
     }
     

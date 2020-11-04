@@ -11,19 +11,18 @@ import Foundation
 class DataCustomizerManager {
     
     func customizingForWeather(data: Weather) -> [CustomDataModelForWeather] {
+        let dateToday = dateFormatorFor(date: Date())
+        let dateTomorrow = dateFormatorFor(date: Date(timeIntervalSinceNow: 86400))
+        
         let lat = data.lat ?? 0
         let lon = data.lon ?? 0
         
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d"
-        
         var customWeather = [CustomDataModelForWeather]()
-        
         var customHourlsForToday = [CustomHourl]()
         var customHourlsForTomorrow = [CustomHourl]()
         
-        var today = "kek"
-        var tomorrow = ""
+        let today = "Сегодня \(dateToday.fullDate)"
+        let tomorrow = "Завтра \(dateTomorrow.fullDate)"
         
         for hourl in data.hourly {
             let parametersWeather = getDataFrom(hourl.weather)
@@ -33,13 +32,11 @@ class DataCustomizerManager {
                                           temp: hourl.temp ?? 0,
                                           icon: parametersWeather.icon,
                                           description: parametersWeather.description)
-            
-            if dateFormatorFor(date: dateAndTime.date) == true {
+            if dateAndTime.day == dateToday.day {
                 customHourlsForToday.append(customHourl)
-                today = formatter.string(from: dateAndTime.date)
-            } else {
+            }
+            if dateAndTime.day == dateTomorrow.day {
                 customHourlsForTomorrow.append(customHourl)
-                tomorrow = formatter.string(from: dateAndTime.date)
             }
         }
         customWeather.append(CustomDataModelForWeather(day: today,
@@ -53,13 +50,16 @@ class DataCustomizerManager {
         return customWeather
     }
     
-    private func dateFormatorFor(date: Date) -> Bool {
+    private func dateFormatorFor(date: Date) -> (day: String, fullDate: String) {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "Ru_ru")
         formatter.dateFormat = "d"
-        let weatherToday = formatter.string(from: date)
-        let today = formatter.string(from: Date())
+        let day = formatter.string(from: date)
         
-        return weatherToday == today
+        formatter.dateFormat = "d MMM yyyy"
+        formatter.dateStyle = .full
+        let fullDate = formatter.string(from: date)
+        return (day, fullDate)
     }
     
     private func getDataFrom(_ parametersWeather: [ParametersWeather]) -> (icon: String, description: String) {
@@ -73,12 +73,13 @@ class DataCustomizerManager {
         return (icon: icon, description: description )
     }
     
-    private func dateFormaterFor(interval: Double) -> (date: Date, time: String) {
+    private func dateFormaterFor(interval: Double) -> (day: String, time: String) {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
         let date = Date(timeIntervalSince1970: interval)
+        let day = dateFormatorFor(date: date).day
         let time = formatter.string(from: date)
-        return (date, time)
+        return (day, time)
     }
     
 }

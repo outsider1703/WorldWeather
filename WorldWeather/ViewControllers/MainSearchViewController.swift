@@ -9,7 +9,11 @@
 import UIKit
 
 class MainSearchViewController: UIViewController {
-        
+    
+    private let cities = CityDictionary.cityDictionary
+    private var filteredCities = [String]()
+    private var recentRequests = [String]()
+    
     private let citySearchBar: UISearchBar = {
         let searchBar = UISearchBar(frame: .zero)
         searchBar.barTintColor = .background
@@ -28,9 +32,6 @@ class MainSearchViewController: UIViewController {
         return table
     }()
     
-    private let cities = ["Калининград", "Дубай", "Сан-франциско", "Томск", "Токио"]
-    private var filteredCities = [String]()
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .background
@@ -39,22 +40,33 @@ class MainSearchViewController: UIViewController {
         resultsTableView.delegate = self
         resultsTableView.dataSource = self
         settingNavigation()
+        checkRecentRequests()
     }
     
 }
 //MARK: - UITableViewDelegate & UITableViewDataSource
 extension MainSearchViewController: UITableViewDelegate, UITableViewDataSource {
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        guard filteredCities.count > 0 else { return }
+        recentRequests.append(filteredCities[indexPath.item])
         let cityWeatherVC = CityWeatherViewController()
-        cityWeatherVC.navigationItem.backButtonTitle = " "
+        cityWeatherVC.setCustomDataFor(city: cities[filteredCities[indexPath.item]] ?? "")
+        cityWeatherVC.transferCity(name: filteredCities[indexPath.item])
+        cityWeatherVC.navigationItem.backButtonTitle = "  "
         cityWeatherVC.navigationItem.largeTitleDisplayMode = .never
         cityWeatherVC.navigationItem.title = "Погода в городе"
-        cityWeatherVC.cityNameLabel.text = filteredCities[indexPath.row]
         navigationController?.pushViewController(cityWeatherVC, animated: true)
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-            filteredCities.count
+        var rowsCount = 0
+        if filteredCities.count > 0 {
+            rowsCount = filteredCities.count
+        } else {
+            rowsCount = recentRequests.count
+        }
+        return rowsCount
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -62,10 +74,15 @@ extension MainSearchViewController: UITableViewDelegate, UITableViewDataSource {
         cell.selectionStyle = .none
         cell.selectedBackgroundView?.tintColor = .red
         cell.selectedBackgroundView?.backgroundColor = .red
-        cell.textLabel?.textColor = .white
         cell.backgroundColor = .background
         cell.textLabel?.font = UIFont.boldSystemFont(ofSize: 32)
-        cell.textLabel?.text = filteredCities[indexPath.row]
+        if filteredCities.count > 0 {
+            cell.textLabel?.textColor = .white
+            cell.textLabel?.text = filteredCities[indexPath.item]
+        } else {
+            cell.textLabel?.textColor = UIColor(red: 1, green: 1, blue: 1, alpha: 0.16)
+            cell.textLabel?.text = recentRequests[indexPath.item]
+        }
         return cell
     }
 }
@@ -73,8 +90,13 @@ extension MainSearchViewController: UITableViewDelegate, UITableViewDataSource {
 extension MainSearchViewController: UISearchBarDelegate {
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        setHeaderView(label: "Похожие запросы")
-        filteredCities = cities.filter({ $0.contains(searchText) })
+        filteredCities = cities.keys.filter({ $0.contains(searchText) })
+        if !searchText.isEmpty && filteredCities.count > 0 {
+            setHeaderView(label: "Похожие запросы")
+        }
+        if searchText.isEmpty {
+            checkRecentRequests()
+        }
         resultsTableView.reloadData()
     }
     
@@ -86,11 +108,11 @@ extension MainSearchViewController: UISearchBarDelegate {
     }
     
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
-        setHeaderView(label: nil)
+        filteredCities = []
+        checkRecentRequests()
         searchBar.showsCancelButton = false
         searchBar.text = ""
         searchBar.resignFirstResponder()
-        filteredCities = []
         resultsTableView.reloadData()
     }
     
@@ -100,6 +122,12 @@ extension MainSearchViewController: UISearchBarDelegate {
 }
 //MARK: - Private Function
 extension MainSearchViewController {
+    
+    private func checkRecentRequests() {
+        if recentRequests.count > 0 {
+            setHeaderView(label: "Последние запросы")
+        }
+    }
     
     private func setHeaderView(label text: String?) {
         if text != nil {
@@ -128,22 +156,40 @@ extension MainSearchViewController {
         navBarAppearance.backgroundColor = .background
         navigationController?.navigationBar.standardAppearance = navBarAppearance
         navigationController?.navigationBar.scrollEdgeAppearance = navBarAppearance
+        let image = UIImage(systemName: "questionmark", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))
+        let barButton = UIBarButtonItem(image: image,
+                                        style: .done,
+                                        target: self,
+                                        action: #selector(showHintAlert))
+        barButton.tintColor = .white
+        navigationItem.rightBarButtonItem = barButton
+    }
+    @objc func showHintAlert() {
+        showHint(
+            title: "Города в которых можно посмотреть достопримечательности",
+            massage: "Калининград, Сан-франциско, Томск, Токио, Лондон")
     }
     
     private func setUpViews() {
         view.addSubview(citySearchBar)
-        citySearchBar.snp.makeConstraints { (make) in
-            make.size.equalTo(CGSize(width: view.frame.width, height: 100))
-            make.leading.equalTo(view).offset(0)
-            make.trailing.equalTo(view).offset(0)
-            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(0)
+        citySearchBar.snp.makeConstraints { make in
+            make.leading.equalToSuperview()
+            make.trailing.equalToSuperview()
+            make.top.equalTo(view.safeAreaLayoutGuide.snp.top)
         }
         view.addSubview(resultsTableView)
-        resultsTableView.snp.makeConstraints { (make) in
-            make.top.equalTo(citySearchBar.snp.bottom).offset(0)
-            make.leading.equalTo(view).offset(0)
-            make.trailing.equalTo(view).offset(0)
-            make.bottom.equalTo(view).offset(0)
+        resultsTableView.snp.makeConstraints { make in
+            make.top.equalTo(citySearchBar.snp.bottom)
+            make.leading.equalToSuperview()
+            make.trailing.equalToSuperview()
+            make.bottom.equalToSuperview()
         }
+    }
+    private func showHint(title: String, massage: String?) {
+        let alert = UIAlertController(title: title, message: massage, preferredStyle: .alert)
+        let okAction = UIAlertAction(title: "OK", style: .default)
+        alert.addAction(okAction)
+        
+        present(alert, animated: true)
     }
 }

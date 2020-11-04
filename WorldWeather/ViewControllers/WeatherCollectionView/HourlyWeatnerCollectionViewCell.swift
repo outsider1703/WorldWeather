@@ -12,10 +12,20 @@ class TodayHourlyWeatnerCollectionViewCell: UICollectionViewCell {
     
     static let reuseId = "TodayCell"
     
-    let timeLabel = UILabel()
     let weatherImage = UIImageView()
-    let tempLabel = UILabel()
-    let descriptionLabel = UILabel()
+    let timeLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.boldSystemFont(ofSize: 18)
+        label.textColor = .white
+        return label
+    }()
+    
+    let tempLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.boldSystemFont(ofSize: 20)
+        label.textColor = .white
+        return label
+    }()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -31,40 +41,25 @@ class TodayHourlyWeatnerCollectionViewCell: UICollectionViewCell {
     func configure(with hourl: CustomHourl) {
         timeLabel.text = "\(hourl.date)"
         weatherImage.image = UIImage(named: hourl.icon)
-        tempLabel.text = "\(hourl.temp)°C"
-        descriptionLabel.text = hourl.description
+        tempLabel.text = "\(Int(hourl.temp))°C"
     }
     
     private func setupViews() {
         addSubview(timeLabel)
         timeLabel.snp.makeConstraints { make in
-            make.top.equalToSuperview()
+            make.top.equalToSuperview().offset(4)
             make.centerX.equalToSuperview()
-//            make.top.equalTo(contentView).offset(0)
-//            make.leading.equalTo(contentView).offset(8)
-//            make.trailing.equalTo(contentView).offset(-8)
         }
         addSubview(weatherImage)
         weatherImage.snp.makeConstraints { make in
-            make.top.equalTo(timeLabel.snp.bottom).offset(2)
-            make.size.equalTo(CGSize(width: 25, height: 50))
-//                        make.leading.equalTo(contentView).offset(8)
-//                        make.trailing.equalTo(contentView).offset(-8)
-//
+            make.size.equalTo(CGSize(width: 65, height: 65))
             make.centerX.equalToSuperview()
+            make.centerY.equalToSuperview()
         }
         addSubview(tempLabel)
         tempLabel.snp.makeConstraints { make in
-            make.top.equalTo(weatherImage.snp.bottom).offset(2)
-            make.leading.equalTo(contentView).offset(8)
-            make.trailing.equalTo(contentView).offset(-8)
-            // make.bottom.equalTo(descriptionLabel.snp.top).offset(2)
-        }
-        addSubview(descriptionLabel)
-        descriptionLabel.snp.makeConstraints { make in
-            make.leading.equalTo(contentView).offset(8)
-            make.trailing.equalTo(contentView).offset(-8)
-            make.bottom.equalTo(contentView).offset(0)
+            make.centerX.equalToSuperview()
+            make.bottom.equalToSuperview().offset(-4)
         }
     }
 }

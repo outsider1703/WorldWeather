@@ -12,6 +12,7 @@ class CityAttractionCollectionViewCell: UICollectionViewCell {
     
     static let reuseId = "AttractionCell"
     
+    private let gradientView = UIView()
     private let nameAttractionLabel: UILabel = {
         let label = UILabel()
         label.numberOfLines = 0
@@ -34,10 +35,8 @@ class CityAttractionCollectionViewCell: UICollectionViewCell {
         image.layer.cornerRadius = 12
         image.layer.masksToBounds = true
         image.image = UIImage(named: "NotImage")
-        
         return image
     }()
-    private let gradientView = UIView()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -49,8 +48,9 @@ class CityAttractionCollectionViewCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func settingDescriptionFor(attraction: CityAttractionsModel) {
-        attractionImage.fetchImage(from: attraction.image)
+    func settingDescriptionFor(attraction: Attraction?) {
+        guard let attraction = attraction else { return }
+        attractionImage.fetchImage(from: attraction.image ?? "")
         nameAttractionLabel.text = attraction.name
         descriptionAttractionLabel.text = attraction.desc
     }
@@ -58,11 +58,11 @@ class CityAttractionCollectionViewCell: UICollectionViewCell {
     private func setupView() {
         contentView.addSubview(attractionImage)
         attractionImage.snp.makeConstraints { make in
-            make.edges.equalTo(UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0))
+            make.edges.equalTo(UIEdgeInsets.zero)
         }
         contentView.addSubview(gradientView)
         gradientView.snp.makeConstraints { make in
-            make.edges.equalTo(UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0))
+            make.edges.equalTo(UIEdgeInsets.zero)
         }
         contentView.addSubview(descriptionAttractionLabel)
         descriptionAttractionLabel.snp.makeConstraints { make in
@@ -83,7 +83,7 @@ class CityAttractionCollectionViewCell: UICollectionViewCell {
         let gradient = CAGradientLayer()
         gradient.frame = self.bounds
         gradient.colors = [transparentColor.cgColor, UIColor.black.cgColor]
-        gradient.startPoint = CGPoint(x: 0, y: 0)
+        gradient.startPoint = CGPoint.zero
         gradient.endPoint = CGPoint(x: 0, y: 0.6)
         gradient.cornerRadius = 12
         gradientView.layer.insertSublayer(gradient, at: 0)

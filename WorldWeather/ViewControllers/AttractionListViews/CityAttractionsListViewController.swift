@@ -10,7 +10,7 @@ import UIKit
 
 class CityAttractionsListViewController: UIViewController {
     
-    var cityAttractions: City!
+    var cityAttractions: Place?
     
     private var cityAttractionCollectionView: UICollectionView! = nil
     
@@ -34,23 +34,25 @@ class CityAttractionsListViewController: UIViewController {
         view.addSubview(cityAttractionCollectionView)
     }
 }
-
+//MARK: - UICollectionViewDataSource & UICollectionViewDelegate
 extension CityAttractionsListViewController: UICollectionViewDataSource, UICollectionViewDelegate {
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let attraction = cityAttractions?.attractions?[indexPath.row] as? Attraction
         let informationAttractionVC = InformationAttractionViewController()
-        informationAttractionVC.navigationItem.title = cityAttractions.attractions[indexPath.row].name
-        informationAttractionVC.descriptionForAttraction = cityAttractions.attractions[indexPath.row]
+        informationAttractionVC.navigationItem.title = cityAttractions?.cityName
+        informationAttractionVC.descriptionForAttraction = attraction
         self.navigationController?.pushViewController(informationAttractionVC, animated: true)
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return cityAttractions.attractions.count
+        cityAttractions?.attractions?.count ?? 0
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CityAttractionCollectionViewCell.reuseId, for: indexPath) as! CityAttractionCollectionViewCell
-        cell.settingDescriptionFor(attraction: cityAttractions.attractions[indexPath.row])
+        let attraction = cityAttractions?.attractions?[indexPath.row] as? Attraction
+        cell.settingDescriptionFor(attraction: attraction)
         return cell
     }
 }

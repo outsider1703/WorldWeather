@@ -11,17 +11,14 @@ import MapKit
 
 class CityWeatherViewController: UIViewController {
     
-    let cityNameLabel: UILabel = {
+    private var cityOnMap = MKMapView()
+    
+    private let cityNameLabel: UILabel = {
         let nameLabel = UILabel()
-        nameLabel.text = "City Name"
+        nameLabel.text = "Название Города"
         nameLabel.font = UIFont.boldSystemFont(ofSize: 32)
         nameLabel.textColor = .white
         return nameLabel
-    }()
-    private let cityOnMap: MKMapView = {
-        let map = MKMapView()
-        
-        return map
     }()
     private let attractionsButton: UIButton = {
         let button = UIButton()
@@ -32,50 +29,30 @@ class CityWeatherViewController: UIViewController {
         return button
     }()
     
-    private var weatherCollection: UICollectionView! = nil
+    private var weatherCollection: UICollectionView?
     private var dataSource: UICollectionViewDiffableDataSource<CustomDataModelForWeather, CustomHourl>?
     
-    private var citiesOfPresence = [City]()
-    private var cityAttractions: City?
+    private var cityAttractionOfPresence: Place?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .background
-        setCustomData()
-        
-        setUpViews()
-        
         setupCollectionView()
-        
+        setUpViews()
         createDataSource()
-                
-        citiesOfPresence.append(CityGetter.firstCity)
-        checkCitiesOfPresence()
     }
     
     @objc func pushToCityAttraction() {
         let cityAttractionListVC = CityAttractionsListViewController()
         cityAttractionListVC.navigationItem.title = "Достопримечательности"
         cityAttractionListVC.navigationItem.backButtonTitle = " "
-        cityAttractionListVC.cityAttractions = cityAttractions
+        cityAttractionListVC.cityAttractions = cityAttractionOfPresence
         navigationController?.pushViewController(cityAttractionListVC, animated: true)
     }
-    
-}
-//MARK: - Private Function
-extension CityWeatherViewController {
-    private func checkCitiesOfPresence() {
-        for city in citiesOfPresence {
-            if city.name == "Калининград" {
-                cityAttractions = city
-            } else {
-                attractionsButton.isHidden = true
-            }
-        }
-    }
-    
-    private func setCustomData() {
-        NetworkManager.shared.fetchCoordinatesFor(city: "Tokio") { (weatherData) in
+    func setCustomDataFor(city: String) {
+        NetworkManager.shared.fetchCoordinatesFor(city: city) {[weak self] weatherData in
+            guard let self = self else { return }
+            
             let customazer = DataCustomizerManager()
             let customWeather = customazer.customizingForWeather(data: weatherData)
             self.reloadDataFor(customData: customWeather)
@@ -85,6 +62,21 @@ extension CityWeatherViewController {
                 self.setLocationForCoord(lat: lat, lon: lon)
             }
         }
+    }
+    func transferCity(name: String) {
+        cityNameLabel.text = name
+        checkCitiesOfPresence(name: name)
+    }
+}
+//MARK: - Private Function
+extension CityWeatherViewController {
+    
+    private func checkCitiesOfPresence(name: String) {
+        guard let place = CoreDataManager.shared.filterFetchFor(city: name).first else {
+            return attractionsButton.isHidden = true
+        }
+        cityAttractionOfPresence = place
+        attractionsButton.isHidden = false
     }
     
     private func setLocationForCoord(lat: Double, lon: Double) {
@@ -100,7 +92,7 @@ extension CityWeatherViewController {
         view.addSubview(cityOnMap)
         cityOnMap.snp.makeConstraints { make in
             make.size.equalTo(CGSize(width: view.frame.width, height: 144))
-            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(0)
+            make.top.equalTo(view.safeAreaLayoutGuide.snp.top)
         }
         view.addSubview(cityNameLabel)
         cityNameLabel.snp.makeConstraints { make in
@@ -108,41 +100,53 @@ extension CityWeatherViewController {
             make.leading.equalToSuperview().offset(24)
             make.trailing.equalToSuperview().offset(-24)
         }
+        view.addSubview(weatherCollection ?? UICollectionView())
+        weatherCollection?.snp.makeConstraints { make in
+            make.size.width.equalTo(view.frame.width)
+            make.top.equalTo(cityNameLabel.snp.bottom)
+        }
         view.addSubview(attractionsButton)
         attractionsButton.snp.makeConstraints { make in
             make.size.equalTo(CGSize(width: view.frame.width - 32, height: 56))
             make.leading.equalToSuperview().offset(18)
-            make.bottom.equalToSuperview().offset(-80)
+            make.bottom.equalTo(view.safeAreaLayoutGuide.snp.bottom).offset(-8)
         }
     }
 }
 //MARK: - Setup Weather Collection View
 extension CityWeatherViewController {
     private func setupCollectionView() {
-        weatherCollection = UICollectionView(frame: CGRect(x: 0, y: 300, width: view.frame.width, height: 400),
+        weatherCollection = UICollectionView(frame: .zero,
                                              collectionViewLayout: createCompositionalLayout())
+        weatherCollection?.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        weatherCollection?.backgroundColor = .background
         
-        weatherCollection.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        weatherCollection.backgroundColor = .background
-        
-        weatherCollection.register(TodayHourlyWeatnerCollectionViewCell.self,
-                                   forCellWithReuseIdentifier: TodayHourlyWeatnerCollectionViewCell.reuseId)
-        weatherCollection.register(SectionHeader.self,
-                                   forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
-                                   withReuseIdentifier: SectionHeader.reuserId)
-        view.addSubview(weatherCollection!)
+        weatherCollection?.register(TodayHourlyWeatnerCollectionViewCell.self,
+                                    forCellWithReuseIdentifier: TodayHourlyWeatnerCollectionViewCell.reuseId)
+        weatherCollection?.register(SectionHeader.self,
+                                    forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+                                    withReuseIdentifier: SectionHeader.reuserId)
     }
-    
     //MARK: - DataSource
     private func createDataSource() {
-        dataSource = UICollectionViewDiffableDataSource<CustomDataModelForWeather, CustomHourl>(collectionView: weatherCollection, cellProvider: { (collectionView, indexPath, hourl) -> UICollectionViewCell? in
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TodayHourlyWeatnerCollectionViewCell.reuseId, for: indexPath) as? TodayHourlyWeatnerCollectionViewCell
-            cell?.configure(with: hourl)
-            return cell
-        })
+        guard let weatherCollection = weatherCollection else { return }
+        dataSource = UICollectionViewDiffableDataSource<CustomDataModelForWeather, CustomHourl>(
+            collectionView: weatherCollection,
+            cellProvider: { (collectionView, indexPath, hourl) -> UICollectionViewCell? in
+                
+                let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TodayHourlyWeatnerCollectionViewCell.reuseId,
+                                                              for: indexPath) as? TodayHourlyWeatnerCollectionViewCell
+                cell?.configure(with: hourl)
+                return cell
+            })
         
         dataSource?.supplementaryViewProvider = { (collectionView, kind, indexPath) in
-            guard let sectionHeader = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: SectionHeader.reuserId, for: indexPath) as? SectionHeader else { return nil }
+            guard let sectionHeader = collectionView.dequeueReusableSupplementaryView(
+                ofKind: kind,
+                withReuseIdentifier: SectionHeader.reuserId,
+                for: indexPath
+            ) as? SectionHeader else { return nil }
+            
             guard let firstChat = self.dataSource?.itemIdentifier(for: indexPath) else { return nil }
             guard let section = self.dataSource?.snapshot().sectionIdentifier(containingItem: firstChat) else { return nil }
             if section.day.isEmpty { return nil }

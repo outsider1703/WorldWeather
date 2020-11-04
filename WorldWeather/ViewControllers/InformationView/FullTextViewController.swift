@@ -13,9 +13,9 @@ class FullTextViewController: UIViewController {
     let fullTextView: UITextView = {
         let textView = UITextView()
         textView.backgroundColor = .background
-        textView.font = UIFont(name: "SFProDisplay-Regular", size: 25)
+        textView.font = UIFont.italicSystemFont(ofSize: 16)
         textView.textColor = .white
-        textView.canCancelContentTouches = false
+        textView.isEditable = false
         return textView
     }()
 
@@ -23,7 +23,10 @@ class FullTextViewController: UIViewController {
         super.viewDidLoad()
         
         view.addSubview(fullTextView)
-        fullTextView.frame = view.bounds
+        fullTextView.snp.makeConstraints { make in
+            make.edges.equalTo(UIEdgeInsets(top: 16, left: 8, bottom: 32, right: 8))
+        }
+//        fullTextView.frame = view.bounds
     }
 
 }

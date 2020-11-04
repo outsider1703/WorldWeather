@@ -22,7 +22,8 @@ class FullMapViewController: UIViewController {
     
      func setLocationForMap(coord: Attraction?) {
         guard let attractionCoord = coord else { return }
-        guard let lat = Double(attractionCoord.lat!), let lon = Double(attractionCoord.lon!) else { return }
+        guard let lat = Double(attractionCoord.lat ?? "") ?? 0,
+              let lon = Double(attractionCoord.lon ?? "") ?? 0 else { return }
         
         let initialLocation = CLLocationCoordinate2D(latitude: lat,
                                                      longitude: lon)
